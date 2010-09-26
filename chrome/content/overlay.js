@@ -18,6 +18,9 @@ var highlighter =
     // Each color name is translated in a html code color value
     realColors: {},
 
+    // The number of currently selected nodes
+    NbSelectedNodes: 0,
+
     /* Select the next color to use for the next call to the highlight function
     */
     SetCurColor: function(color)
@@ -34,9 +37,10 @@ var highlighter =
                 icon.image = "chrome://highlighter/skin/pens/sel-"+color+".png";
             }
         }
-        catch ( exc )
+        catch ( e )
         {
-            alert("Exception:\n"+exc.message);
+            var msg = "Highlighter.SetCurColor: "+e.message;
+            Components.utils.reportError(msg); 
         }
     },
 
@@ -50,7 +54,7 @@ var highlighter =
             // Remove all the styles from the selection.
             var domndEditor = document.getElementById("content-frame");
             var htmlEditor = domndEditor.getHTMLEditor(domndEditor.contentWindow);
-
+            
             // The HTML editor.selection is in fact, an object, that is not anymore documented
             // see the doc folder for details
             var selectionObj = htmlEditor.selection;
@@ -94,17 +98,13 @@ var highlighter =
                 // Recursively search for span with inline style,
                 // and remove the style
                 var nodeList = selectedContainer.childNodes;
-                highlighter.ClearFormatForChilds(nodeList, selectionObj);
-            }
-            else
-            {
-                alert(textSelected);
-                // htmlEditor.insertHTML(textSelected);
+                highlighter.ApplyForChilds(nodeList, selectionObj, highlighter.ClearNode);
             }
         }
-        catch ( exc )
+        catch ( e )
         {
-            // alert(exc.message);
+            var msg = "Highlighter.ClearFormat: "+e.message;
+            Components.utils.reportError(msg); 
         }
 
         // This is necessary because due to event propagation,
@@ -125,112 +125,226 @@ var highlighter =
             if ( highlighter.clearFormatCalled )
             {
                 highlighter.clearFormatCalled = false;
-                return;
             }
-
-            if ( highlighter.IsSelectionMultiple() )
+            else
             {
-                msgText = "Multiple text selection not yet supported in this version !";
-                alert(msgText);
-                return;
-            }
+                // get the frame editor
+                var domndEditor = document.getElementById("content-frame");
+                var htmlEditor = domndEditor.getHTMLEditor(domndEditor.contentWindow);
 
-            // Get the real color from the last picked color
-            var realColor = highlighter.GetRealColor(highlighter.curColor);
+                // This returns the deepest container of the selection 
+                var selectedContainer = htmlEditor.getSelectionContainer();
 
-            // Get the editor object
-            var domndEditor = document.getElementById("content-frame");
-            var htmlEditor = domndEditor.getHTMLEditor(domndEditor.contentWindow);
-            var textSelected = htmlEditor.selection;
-            var selectedContainer = htmlEditor.getSelectionContainer();
+                // The HTML editor.selection is in fact, an object, that is not anymore documented
+                // see the doc folder for details
+                var selectionObj = htmlEditor.selection;
 
-            if ( textSelected == '' && selectedContainer )
-            {
-                if ( selectedContainer.hasAttribute('style') )
+                var multipleSelection = highlighter.IsSelectionMultiple() ;
+                var selectedNodes = selectedContainer.childNodes;
+                var nbNodesSelected = highlighter.CountSelectedNodes(selectedNodes, selectionObj, true);
+
+                if ( nbNodesSelected == 0 )
                 {
-                    var textStyle="background-color:"+realColor+";";
-                    var curStyle = selectedContainer.getAttribute("style");
-                    var newStyle = curStyle.replace(/background-color:[^;]+;/i, '');
-                    newStyle += textStyle;
-                    selectedContainer.setAttribute("style", newStyle);
+                    // There is no node selected. so create an new one with the selection
+                    if ( !multipleSelection )
+                    {
+                        highlighter.HighlightSimpleText();
+                    }
+                    else
+                    {
+                        alert("Multiple text selection not yet supported.");
+                    }
                 }
                 else
                 {
-                    var textStyle="background-color:"+realColor+";";
-                    selectedContainer.setAttribute("style", textStyle);
+                    highlighter.ApplyForChilds(selectedNodes, selectionObj, highlighter.HighlightNode);
                 }
-            }
-            else if ( textSelected != '' )
-            {
-                // create the span that will contains the selection, and apply the style
-                var span = htmlEditor.createElementWithDefaults('span');
-                var textStyle="background-color:"+realColor+";";
-                span.setAttribute("style", textStyle);
-
-                // create a text node with the selection, and append it to the span
-                var textNode = document.createTextNode(textSelected);
-                span.appendChild(textNode);
-
-                // Replace the selection with the element, and select it again.
-                htmlEditor.insertElementAtSelection(span, true);
-                htmlEditor.selectElement(span);
             }
         }
         catch (e)
         {
-            // alert("Exception:\n"+e.message);
+            var msg = "Highlighter.Highlight: "+e.message;
+            Components.utils.reportError(msg); 
         }
     },
 
     /*** Private Methods ***/
 
-    /* Recursively remove background styles the format for a list of nodes
+    /* Create a new text node with the currently selected text,
+    * and replace the selection with the new node.
     */
-    ClearFormatForChilds: function(nodeList, selectionObj)
+    HighlightSimpleText: function()
     {
+        // Get the real color from the last picked color
+        var realColor = highlighter.GetRealColor(highlighter.curColor);
+
+        // Get the editor object
+        var domndEditor = document.getElementById("content-frame");
+        var htmlEditor = domndEditor.getHTMLEditor(domndEditor.contentWindow);
+        var textSelected = htmlEditor.selection;
+        var selectedContainer = htmlEditor.getSelectionContainer();
+
+        if ( textSelected == '' && selectedContainer )
+        {
+            if ( selectedContainer.hasAttribute('style') )
+            {
+                var textStyle="background-color:"+realColor+";";
+                var curStyle = selectedContainer.getAttribute("style");
+                var newStyle = curStyle.replace(/background-color:[^;]+;/i, '');
+                newStyle += textStyle;
+                selectedContainer.setAttribute("style", newStyle);
+            }
+            else
+            {
+                var textStyle="background-color:"+realColor+";";
+                selectedContainer.setAttribute("style", textStyle);
+            }
+        }
+        else if ( textSelected != '' )
+        {
+            // create the span that will contains the selection, and apply the style
+            var span = htmlEditor.createElementWithDefaults('span');
+            var textStyle="background-color:"+realColor+";";
+            span.setAttribute("style", textStyle);
+
+            // create a text node with the selection, and append it to the span
+            var textNode = document.createTextNode(textSelected);
+            span.appendChild(textNode);
+
+            // Replace the selection with the element, and select it again.
+            htmlEditor.insertElementAtSelection(span, true);
+            htmlEditor.selectElement(span);
+        }
+    },
+
+    /* Recursively apply a background color on a list of selected nodes
+    */
+    ApplyForChilds: function(nodeList, selectionObj, formatFunction)
+    {
+        // for these markups, we need to format the element
+        // only when it is fully selected.
+        var exactSel = "div,table,td,th".split(',');
+
         for ( var c=0 ; c < nodeList.length ; c++ )
         {
             var child = nodeList.item(c);
 
-            if ( child.hasAttributes() )
+            // The text of an element is always stored inside a child '#text' node
+            var nodeText = child.firstChild ? child.firstChild.nodeValue : "" ;
+
+            var nodeInSel = false;
+
+            // Even if the contains node function is marked as FROZEN inside the current
+            // thunderbird source code, it's not yet have been copied into the official
+            // MDC documentation. It was in the XUL planet, however.
+            if ( typeof(selectionObj.containsNode) != 'undefined' )
             {
-                var style = child.attributes.getNamedItem('style');
+                var nodeType = child.nodeName.toLowerCase();
+                var partlySelected = exactSel.indexOf(nodeType) < 0;
 
-                // The text of an element is always stored inside a child '#text' node
-                var nodeText = child.firstChild ? child.firstChild.nodeValue : "" ;
-
-                if ( style  )
+                try
                 {
-                    var nodeInSel = false;
-
-                    // Even if the contains node function is marked as FROZEN inside the current
-                    // thunderbird source code, it's not yet have been copied into the official
-                    // MDC documentation. It was in the XUL planet, however.
-                    if ( typeof(selectionObj.containsNode) != 'undefined' )
-                    {
-                        try
-                        {
-                            nodeInSel = selectionObj.containsNode(child, true);
-                        }
-                        catch ( exc )
-                        {
-                            nodeInSel = ( selectionObj.toString().indexOf(nodeText) >= 0 );
-                        }
-                    }
-                    else
-                        nodeInSel = ( selectionObj.toString().indexOf(nodeText) >= 0 );
-
-                    if ( nodeInSel )
-                        style.nodeValue = style.nodeValue.replace(/background-color:[^;]+;/i, '');
+                    // the last parameters means also return true if the node is part of the selection only 
+                    nodeInSel = selectionObj.containsNode(child, partlySelected);
                 }
+                catch ( exc )
+                {
+                    nodeInSel = ( selectionObj.toString().indexOf(nodeText) >= 0 );
+                }
+            }
+            else
+                nodeInSel = ( selectionObj.toString().indexOf(nodeText) >= 0 );
+
+            if ( nodeInSel )
+            {
+                formatFunction(child);
             }
 
             if ( child.hasChildNodes() )
             {
                 // Recursively apply the clear format to all nodes.
-                highlighter.ClearFormatForChilds(child.childNodes, selectionObj);
+                highlighter.ApplyForChilds(child.childNodes, selectionObj, formatFunction);
             }
         }
+    },
+
+    /* Remove the current background color from a node
+    */
+    ClearNode: function(node)
+    {
+        if ( node.hasAttributes() && node.attributes.getNamedItem('style') )
+        {
+            // remove current background color, and apply the new one
+            var style = node.attributes.getNamedItem('style');
+            style.nodeValue = style.nodeValue.replace(/background-color:[^;]+;/i, '');
+        }
+    },
+
+    /* Highlight one node only, with the currently selected color
+    */
+    HighlightNode: function(node)
+    {
+        // Get the real color from the last picked color
+        var realColor = highlighter.GetRealColor(highlighter.curColor);
+
+        if ( node.hasAttributes() && node.attributes.getNamedItem('style') )
+        {
+            // remove current background color, and apply the new one
+            var style = node.attributes.getNamedItem('style');
+            style.nodeValue = style.nodeValue.replace(/background-color:[^;]+;/i, '');
+            style.nodeValue += ";background-color:"+realColor+';';
+        }
+        else if ( typeof(node.setAttribute) == 'function' )
+        {
+            // add a new style attribute with a background color
+            var textStyle="background-color:"+realColor+";";
+                node.setAttribute("style", textStyle);
+        }
+    },
+
+    /* Recursively crawl a node, and return the number of nodes that are part of the selection
+    */
+    CountSelectedNodes: function(nodeList, selectionObj, reset)
+    {
+        if ( reset ) highlighter.NbSelectedNodes = 0;
+
+        for ( var c=0 ; c < nodeList.length ; c++ )
+        {
+            var child = nodeList.item(c);
+
+            // I do not want to count text for now, just real nodes (div,span,etc)
+            if ( child.nodeName == '#text' ) continue;
+
+            // The text of an element is always stored inside a child '#text' node
+            var nodeInSel = false;
+
+            // Even if the contains node function is marked as FROZEN inside the current
+            // thunderbird source code, it's not yet have been copied into the official
+            // MDC documentation. It was in the XUL planet, however.
+            if ( typeof(selectionObj.containsNode) != 'undefined' )
+            {
+                try
+                {
+                    // the last parameters means also return true if the node is part of the selection only 
+                    nodeInSel = selectionObj.containsNode(child, true);
+                }
+                catch ( exc )
+                {
+                    nodeInSel = false;
+                }
+
+                if (nodeInSel)
+                    highlighter.NbSelectedNodes++;
+            }
+
+            if ( child.hasChildNodes() )
+            {
+                // Recursively search for selected nodes in the child
+                highlighter.CountSelectedNodes(child.childNodes, selectionObj, false);
+            }
+        }
+
+        return highlighter.NbSelectedNodes;
     },
 
     /* Return the real HTML color from a color name,
@@ -280,33 +394,38 @@ var highlighter =
     */
     Initialise: function()
     {
-        // Create the list of colors
-        highlighter.realColors['yellow']    = '#ff6';
-        highlighter.realColors['cyan']      = '#aff';
-        highlighter.realColors['green']     = '#9f9';
-        highlighter.realColors['pink']      = '#f6f';
-        highlighter.realColors['red']       = '#f99';
+        try
+        {
+            // Create the list of colors
+            highlighter.realColors['yellow']    = '#ff6';
+            highlighter.realColors['cyan']      = '#aff';
+            highlighter.realColors['green']     = '#9f9';
+            highlighter.realColors['pink']      = '#f6f';
+            highlighter.realColors['red']       = '#f99';
 
-        // Useful for B&W printing
-        highlighter.realColors['lgrey']     = '#ccc';
-        highlighter.realColors['dgrey']     = '#999';
+            // Useful for B&W printing
+            highlighter.realColors['lgrey']     = '#ccc';
+            highlighter.realColors['dgrey']     = '#999';
 
-        // initialise the default color:
-        var curColor = "yellow";
-        var curColorAttr = document.getElementById("highlighter-toolbar-button").getAttribute("curColor");
-        // alert(curColorAttr);
-        if ( curColorAttr ) curColor = curColorAttr.value;
-        highlighter.SetCurColor(curColor);
+            // initialise the default color.
+            // TODO: implement persistency
+            var curColor = "yellow";
+            highlighter.SetCurColor(curColor);
 
-        // Finished
-        highlighter.initialised = true;
+            // Finished
+            highlighter.initialised = true;
+        }
+        catch (e)
+        {
+            var msg = "Highlighter.Initialise: "+e.message;
+            Components.utils.reportError(msg); 
+        }
     },
 
     /* Release all resources, and exit the plugin
     */
     Release: function()
     {
-        // alert('exit');
     },
 
     /* Return true or false if the highlighter had been initialised.
