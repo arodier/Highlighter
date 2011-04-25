@@ -188,7 +188,7 @@ var highlighter =
         {
             if ( selectedContainer.hasAttribute('style') )
             {
-                var textStyle="background-color:"+realColor+";";
+                var textStyle="background-color:"+realColor+" !important;";
                 var curStyle = selectedContainer.getAttribute("style");
                 var newStyle = curStyle.replace(/background-color:[^;]+;/i, '');
                 newStyle += textStyle;
@@ -202,14 +202,26 @@ var highlighter =
         }
         else if ( textSelected != '' )
         {
+            // Replace the current selection by a trimmed selection if needed
+            var textString = textSelected.toString();
+            var trimmed = false;
+            if ( textString.match(/(^\s+|\s+$)/) )
+            {
+                trimmed = true;
+                // textString = textString.replace(/(^\s+|\s+$)/g, '');
+            }
+
             // create the span that will contains the selection, and apply the style
             var span = htmlEditor.createElementWithDefaults('span');
-            var textStyle="background-color:"+realColor+";";
+            var textStyle="background-color:"+realColor+" !important;";
             span.setAttribute("style", textStyle);
 
             // create a text node with the selection, and append it to the span
-            var textNode = document.createTextNode(textSelected);
+            var textNode = document.createTextNode(textString);
             span.appendChild(textNode);
+
+            // var space = document.createTextNode(' ');
+            // htmlEditor.insertElementAtSelection(space, false);
 
             // Replace the selection with the element, and select it again.
             htmlEditor.insertElementAtSelection(span, true);
@@ -255,12 +267,16 @@ var highlighter =
             else
                 nodeInSel = ( selectionObj.toString().indexOf(nodeText) >= 0 );
 
+            // The apply function can return a value indicating that we need to 
+            // call recursively or not
+            var cont = true;
+
             if ( nodeInSel )
             {
-                formatFunction(child);
+                cont = formatFunction(child);
             }
 
-            if ( child.hasChildNodes() )
+            if ( cont && child.hasChildNodes() )
             {
                 // Recursively apply the clear format to all nodes.
                 highlighter.ApplyForChilds(child.childNodes, selectionObj, formatFunction);
@@ -287,19 +303,55 @@ var highlighter =
         // Get the real color from the last picked color
         var realColor = highlighter.GetRealColor(highlighter.curColor);
 
+        // we'll return a boolean indicating that we have applied a style on the node,
+        // so we don't need to apply it again recursively ?
+        var cont = true;
+
         if ( node.hasAttributes() && node.attributes.getNamedItem('style') )
         {
             // remove current background color, and apply the new one
             var style = node.attributes.getNamedItem('style');
             style.nodeValue = style.nodeValue.replace(/background-color:[^;]+;/i, '');
-            style.nodeValue += ";background-color:"+realColor+';';
+            style.nodeValue += ";background-color:"+realColor+' !important;';
+
+            if ( node.childNodes.length == 1 && node.childNodes[0].nodeName == '#text' )
+                cont = false;
         }
         else if ( typeof(node.setAttribute) == 'function' )
         {
             // add a new style attribute with a background color
-            var textStyle="background-color:"+realColor+";";
-                node.setAttribute("style", textStyle);
+            var textStyle="background-color:"+realColor+" !important;";
+            node.setAttribute("style", textStyle);
+
+            if ( node.childNodes.length == 1 && node.childNodes[0].nodeName == '#text' )
+                cont = false;
         }
+        else if ( node.nodeValue )
+        {
+            // Replace this text node with a new span with computed style
+            var parentNode = node.parentNode;
+
+            // get the frame editor
+            var domndEditor = document.getElementById("content-frame");
+            var htmlEditor = domndEditor.getHTMLEditor(domndEditor.contentWindow);
+
+            // create the span that will contains the selection, and apply the style
+            var span = htmlEditor.createElementWithDefaults('span');
+            var textStyle="background-color:"+realColor+" !important;";
+            span.setAttribute("style", textStyle);
+
+            // create a text node with the selection, and append it to the span
+            var textNode = document.createTextNode(node.nodeValue);
+            span.appendChild(textNode);
+
+            // Replace the selection with the element, and select it again.
+            parentNode.replaceChild(span, node);
+
+            // we don't need to continue here, because it's a text node, and does not contains children nodes
+            cont = false;
+        }
+
+        return cont;
     },
 
     /* Recursively crawl a node, and return the number of nodes that are part of the selection
