@@ -6,11 +6,11 @@
 <!ENTITY highlighter.clearTooltip "Remove all the highlight from the current selection">
 
 <!-- Colors -->
-<!ENTITY highlighter.labelYellow "Yellow">
-<!ENTITY highlighter.labelCyan "Cyan">
-<!ENTITY highlighter.labelGreen "Green">
-<!ENTITY highlighter.labelRed "Red">
-<!ENTITY highlighter.labelPink "Pink">
-<!ENTITY highlighter.labelLightGrey "Light grey">
-<!ENTITY highlighter.labelDarkGrey "Dark grey">
-<!ENTITY highlighter.labelClear "Clear">
+<!ENTITY highlighter.labelYellow "Yellow.">
+<!ENTITY highlighter.labelCyan "Cyan.">
+<!ENTITY highlighter.labelGreen "Green.">
+<!ENTITY highlighter.labelRed "Red.">
+<!ENTITY highlighter.labelPink "Pink.">
+<!ENTITY highlighter.labelLightGrey "Light grey.">
+<!ENTITY highlighter.labelDarkGrey "Dark grey.">
+<!ENTITY highlighter.labelClear "Clear.">

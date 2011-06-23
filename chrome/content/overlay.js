@@ -188,7 +188,7 @@ var highlighter =
         {
             if ( selectedContainer.hasAttribute('style') )
             {
-                var textStyle="background-color:"+realColor+" !important;";
+                var textStyle="background-color:"+realColor+";";
                 var curStyle = selectedContainer.getAttribute("style");
                 var newStyle = curStyle.replace(/background-color:[^;]+;/i, '');
                 newStyle += textStyle;
@@ -213,7 +213,7 @@ var highlighter =
 
             // create the span that will contains the selection, and apply the style
             var span = htmlEditor.createElementWithDefaults('span');
-            var textStyle="background-color:"+realColor+" !important;";
+            var textStyle="background-color:"+realColor+";";
             span.setAttribute("style", textStyle);
 
             // create a text node with the selection, and append it to the span
@@ -312,7 +312,7 @@ var highlighter =
             // remove current background color, and apply the new one
             var style = node.attributes.getNamedItem('style');
             style.nodeValue = style.nodeValue.replace(/background-color:[^;]+;/i, '');
-            style.nodeValue += ";background-color:"+realColor+' !important;';
+            style.nodeValue += ";background-color:"+realColor+';';
 
             if ( node.childNodes.length == 1 && node.childNodes[0].nodeName == '#text' )
                 cont = false;
@@ -320,7 +320,7 @@ var highlighter =
         else if ( typeof(node.setAttribute) == 'function' )
         {
             // add a new style attribute with a background color
-            var textStyle="background-color:"+realColor+" !important;";
+            var textStyle="background-color:"+realColor+";";
             node.setAttribute("style", textStyle);
 
             if ( node.childNodes.length == 1 && node.childNodes[0].nodeName == '#text' )
@@ -337,7 +337,7 @@ var highlighter =
 
             // create the span that will contains the selection, and apply the style
             var span = htmlEditor.createElementWithDefaults('span');
-            var textStyle="background-color:"+realColor+" !important;";
+            var textStyle="background-color:"+realColor+";";
             span.setAttribute("style", textStyle);
 
             // create a text node with the selection, and append it to the span
@@ -504,4 +504,3 @@ window.addEventListener("unload",
         highlighter.Release();
     },
 false);
-
