@@ -55,6 +55,9 @@ var highlighter =
             var domndEditor = document.getElementById("content-frame");
             var htmlEditor = domndEditor.getHTMLEditor(domndEditor.contentWindow);
             
+            // enable undo support
+            htmlEditor.beginTransaction();
+
             // The HTML editor.selection is in fact, an object, that is not anymore documented
             // see the doc folder for details
             var selectionObj = htmlEditor.selection;
@@ -84,12 +87,18 @@ var highlighter =
                         // remove the span itself. The span first child is a text
                         // node that contains it's value. Normally...
                         if ( selectedContainer.firstChild )
+                        {
                             textSelected = selectedContainer.firstChild.nodeValue;
+                        }
                         else
+                        {
                             textSelected = selectedContainer.nodeValue;
+                        }
 
-                        htmlEditor.selectElement(selectedContainer);
-                        htmlEditor.insertHTML(textSelected, true);
+                        // remove formatting characters, and replace the node by simple text.
+                        textSelected = textSelected.replace(/(\s|\n|\r)+/g, ' ');
+                        htmlEditor.deleteNode(selectedContainer);
+                        htmlEditor.insertText(textSelected);
                     }
                 }
             }
@@ -100,6 +109,9 @@ var highlighter =
                 var nodeList = selectedContainer.childNodes;
                 highlighter.ApplyForChilds(nodeList, selectionObj, highlighter.ClearNode);
             }
+
+            // enable undo support
+            htmlEditor.endTransaction();
         }
         catch ( e )
         {
@@ -157,7 +169,10 @@ var highlighter =
                 }
                 else
                 {
+                    // enable undo support
+                    htmlEditor.beginTransaction();
                     highlighter.ApplyForChilds(selectedNodes, selectionObj, highlighter.HighlightNode);
+                    htmlEditor.endTransaction();
                 }
             }
         }
@@ -183,6 +198,9 @@ var highlighter =
         var htmlEditor = domndEditor.getHTMLEditor(domndEditor.contentWindow);
         var textSelected = htmlEditor.selection;
         var selectedContainer = htmlEditor.getSelectionContainer();
+
+        // enable undo support
+        htmlEditor.beginTransaction();
 
         if ( textSelected == '' && selectedContainer )
         {
@@ -220,13 +238,13 @@ var highlighter =
             var textNode = document.createTextNode(textString);
             span.appendChild(textNode);
 
-            // var space = document.createTextNode(' ');
-            // htmlEditor.insertElementAtSelection(space, false);
-
             // Replace the selection with the element, and select it again.
             htmlEditor.insertElementAtSelection(span, true);
             htmlEditor.selectElement(span);
         }
+
+        // enable undo support
+        htmlEditor.endTransaction();
     },
 
     /* Recursively apply a background color on a list of selected nodes
