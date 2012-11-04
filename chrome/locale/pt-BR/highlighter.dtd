@@ -1,0 +1,16 @@
+<!-- Main -->
+<!ENTITY highlighter.label "Highlighter">
+
+<!-- Tooltips -->
+<!ENTITY highlighter.mainTooltip "Destaca o texto selecionado com a última cor utilizada ou com a cor padrão.">
+<!ENTITY highlighter.clearTooltip "Remove todo o destaque da seleção atual.">
+
+<!-- Colors -->
+<!ENTITY highlighter.labelYellow "Amarelo">
+<!ENTITY highlighter.labelCyan "Ciano">
+<!ENTITY highlighter.labelGreen "Verde">
+<!ENTITY highlighter.labelRed "Vermelho">
+<!ENTITY highlighter.labelPink "Rosa">
+<!ENTITY highlighter.labelLightGrey "Cinza claro">
+<!ENTITY highlighter.labelDarkGrey "Cinza escuro">
+<!ENTITY highlighter.labelClear "Limpar">
