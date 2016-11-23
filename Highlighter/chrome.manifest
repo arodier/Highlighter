@@ -1,5 +1,6 @@
 content   Highlighter                 chrome/content/
 skin      Highlighter   classic/1.0   chrome/skin/
+locale    Highlighter   de-DE         chrome/locale/de-DE/
 locale    Highlighter   en-GB         chrome/locale/en-GB/
 locale    Highlighter   en-US         chrome/locale/en-US/
 locale    Highlighter   fr-FR         chrome/locale/fr-FR/
