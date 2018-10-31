@@ -508,7 +508,7 @@ var highlighter =
 
 // Initialise the addon on start.
 window.addEventListener("load",
-    function(e)
+    e =>
     {
         if ( !highlighter.Initialised() )
             highlighter.Initialise();
@@ -517,7 +517,7 @@ false);
 
 // Initialise the addon on start.
 window.addEventListener("unload",
-    function(e)
+    e =>
     {
         highlighter.Release();
     },
