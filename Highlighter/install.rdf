@@ -23,7 +23,7 @@
     <em:id>andre.rodier-highlighter@gmailcom</em:id>
     <em:type>2</em:type>
     <em:name>Highlighter</em:name>
-    <em:version>0.6.6</em:version>
+    <em:version>0.7.0</em:version>
     <em:creator>André Rodier</em:creator>
     <em:contributor></em:contributor>
     <em:description>Quickly highlight some text in the thunderbird compose windows.</em:description>
